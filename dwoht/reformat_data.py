@@ -1,38 +1,8 @@
 from __future__ import annotations
 
-from collections import namedtuple
-from pathlib import Path
-
 import numpy as np
 
 from .log import logger
-
-
-def yaml_to_object(yaml_file, yaml_folder=None, to_object=True) -> namedtuple:
-    """
-    read yaml config file to a dict
-
-    Args:
-        yaml_file: yaml file name
-        yaml_folder: yaml file folder
-        to_object: whether to transform it to a Python object
-    Returns:
-        a namedtuple
-    """
-
-    if yaml_folder is None:
-        yaml_folder = Path(__file__).parent.joinpath('config')
-    else:
-        yaml_folder = Path(yaml_folder)
-    import yaml
-
-    with open(yaml_folder.joinpath(yaml_file), encoding='utf-8') as file:
-        data = yaml.safe_load(file)
-
-    if to_object:
-        data = namedtuple('ObjectName', data.keys())(*data.values())
-
-    return data
 
 
 def col_to_str(df, col_list):

@@ -1,9 +1,40 @@
 import datetime
 import multiprocessing
+import time
+from collections import namedtuple
+from datetime import timedelta
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from pathos.multiprocessing import ProcessPool
+
+
+def yaml_to_object(yaml_file, yaml_folder=None, to_object=True) -> namedtuple:
+    """
+    read yaml config file to a dict
+
+    Args:
+        yaml_file: yaml file name
+        yaml_folder: yaml file folder
+        to_object: whether to transform it to a Python object
+    Returns:
+        a namedtuple
+    """
+
+    if yaml_folder is None:
+        yaml_folder = Path(__file__).parent.joinpath("config")
+    else:
+        yaml_folder = Path(yaml_folder)
+    import yaml
+
+    with open(yaml_folder.joinpath(yaml_file), encoding="utf-8") as file:
+        data = yaml.safe_load(file)
+
+    if to_object:
+        data = namedtuple("ObjectName", data.keys())(*data.values())
+
+    return data
 
 
 def dataframe_mp(dataframe, func, mp_cores: int = None):
@@ -31,7 +62,7 @@ def dataframe_mp(dataframe, func, mp_cores: int = None):
     return output_dataset
 
 
-def get_sunday(date, input_format='%Y%m%d', output_format='%Y%m%d'):
+def get_sunday(date, input_format="%Y%m%d", output_format="%Y%m%d"):
     """
     get the sunday of the week of the input date
 
@@ -77,9 +108,9 @@ def lambda_groupby(lambda_func, groupby_df, groupby_cols, result_col, reformat=F
     new_col_lst = groupby_cols + [result_col]
     df_temp = pd.DataFrame(data=np.array(temp_lst), columns=new_col_lst)
 
-    if reformat == 'float':
+    if reformat == "float":
         df_temp[result_col] = df_temp[result_col].astype(float)
-    elif reformat == 'int':
+    elif reformat == "int":
         df_temp[result_col] = df_temp[result_col].astype(int)
     else:
         pass
@@ -100,11 +131,17 @@ def calculate_r2_value(input_df, true_col, predict_col, mean_col):
 
     check = input_df.copy()
 
-    check['a'] = check[true_col] - check[predict_col]
-    check['a'] = check['a'].map(lambda x: x * x)
-    check['b'] = check[true_col] - check[mean_col]
-    check['b'] = check['b'].map(lambda x: x * x)
+    check["a"] = check[true_col] - check[predict_col]
+    check["a"] = check["a"].map(lambda x: x * x)
+    check["b"] = check[true_col] - check[mean_col]
+    check["b"] = check["b"].map(lambda x: x * x)
 
-    R2_VALUE = 1 - check['a'].sum() / check['b'].sum()
+    R2_VALUE = 1 - check["a"].sum() / check["b"].sum()
 
     return R2_VALUE
+
+
+def get_time_dif(start_time):
+    end_time = time.time()
+    time_dif = end_time - start_time
+    return timedelta(seconds=int(round(time_dif)))
