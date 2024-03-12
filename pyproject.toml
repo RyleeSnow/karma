@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dwoht"
-version = "0.0.4"
+version = "0.0.6"
 authors = [
   { name="ryleesnow", email="author@example.com" },
 ]
-description = "personal_used_codebase_inspired_by_Taylor_Swift"
+description = "a personal used codebase for some common data processing tasks."
 readme = "README.md"
 requires-python = ">=3.8.13"
 classifiers = [
