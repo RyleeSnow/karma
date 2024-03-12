@@ -1,5 +1,6 @@
 import datetime
 import multiprocessing
+import sys
 import time
 from collections import namedtuple
 from datetime import timedelta
@@ -142,6 +143,57 @@ def calculate_r2_value(input_df, true_col, predict_col, mean_col):
 
 
 def get_time_dif(start_time):
+    """Get the time difference between now and the start time"""
+
     end_time = time.time()
     time_dif = end_time - start_time
     return timedelta(seconds=int(round(time_dif)))
+
+
+def list_intersection(a: list, b: list) -> list:
+    """Return the intersection of two lists"""
+
+    return list(set(a).intersection(set(b)))
+
+
+def list_diff(a: list, b: list) -> list:
+    """Return the difference of two lists"""
+
+    return list(set(a).difference(set(b)))
+
+
+def list_sym_diff(a: list, b: list) -> list:
+    """Return the symmetric difference of two lists, in a or in b but not in both"""
+    return list(set(a) ^ set(b))
+
+
+def list_union(a: list, b: list) -> list:
+    """Return the union of two lists"""
+    return list(set(a).union(set(b)))
+
+
+def set_intersection(a: set, b: set) -> set:
+    """Return the intersection of two sets"""
+    return a & b
+
+
+def set_diff(a: set, b: set) -> set:
+    """Return the difference of two sets, in a not in b"""
+    return a - b
+
+
+def set_sym_diff(a: set, b: set) -> set:
+    """Return the symmetric difference of two sets, in a or in b but not in both"""
+    return a ^ b
+
+
+def set_union(a: set, b: set) -> set:
+    """Return the union of two sets"""
+    return a | b
+
+
+def add_sys_path(wrkdir: list):
+    """Add the working directory to sys.path"""
+    for w in wrkdir:
+        if w not in sys.path:
+            sys.path.append(w)
