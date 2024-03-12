@@ -8,28 +8,30 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from pathos.multiprocessing import ProcessPool
 
 
-def yaml_to_object(yaml_file, yaml_folder=None, to_object=True) -> namedtuple:
+def yaml_to_object(yaml_file, yaml_folder=None, to_object=True):
     """
     read yaml config file to a dict
 
-    Args:
-        yaml_file: yaml file name
-        yaml_folder: yaml file folder
-        to_object: whether to transform it to a Python object
-    Returns:
-        a namedtuple
+    :param yaml_file: yaml file name
+    :param yaml_folder: yaml file folder
+    :param to_object: whether to transform it to a Python object
+    :return: a namedtuple
     """
 
-    if yaml_folder is None:
-        yaml_folder = Path(__file__).parent.joinpath("config")
+    if Path(yaml_file).is_file():
+        input_path = Path(yaml_file)
     else:
-        yaml_folder = Path(yaml_folder)
-    import yaml
+        if yaml_folder is None:
+            raise ValueError("yaml_folder is None")
+        else:
+            yaml_folder = Path(yaml_folder)
+        input_path = yaml_folder.joinpath(yaml_file)
 
-    with open(yaml_folder.joinpath(yaml_file), encoding="utf-8") as file:
+    with open(input_path, encoding="utf-8") as file:
         data = yaml.safe_load(file)
 
     if to_object:
@@ -38,7 +40,7 @@ def yaml_to_object(yaml_file, yaml_folder=None, to_object=True) -> namedtuple:
     return data
 
 
-def dataframe_mp(dataframe, func, mp_cores: int = None):
+def dataframe_mp(dataframe: pd.DataFrame, func: callable, mp_cores: int = None) -> pd.DataFrame:
     """
     do multiprocessing on a dataframe
 
@@ -84,7 +86,7 @@ def get_sunday(date, input_format="%Y%m%d", output_format="%Y%m%d"):
     return datetime.datetime.strftime(sunday, output_format)
 
 
-def lambda_groupby(lambda_func, groupby_df, groupby_cols, result_col, reformat=False):
+def lambda_groupby(lambda_func, groupby_df: pd.DataFrame, groupby_cols: list, result_col: str, reformat: bool = False):
     """
     apply lambda function to a groupby dataframe
 
@@ -119,7 +121,7 @@ def lambda_groupby(lambda_func, groupby_df, groupby_cols, result_col, reformat=F
     return df_temp
 
 
-def calculate_r2_value(input_df, true_col, predict_col, mean_col):
+def calculate_r2_value(input_df: pd.DataFrame, true_col: str, predict_col: str, mean_col: str) -> float:
     """
     calculate R2 value
 
@@ -142,7 +144,7 @@ def calculate_r2_value(input_df, true_col, predict_col, mean_col):
     return R2_VALUE
 
 
-def get_time_dif(start_time):
+def get_time_dif(start_time: time.time):
     """Get the time difference between now and the start time"""
 
     end_time = time.time()
