@@ -199,3 +199,28 @@ def add_sys_path(wrkdir: list):
     for w in wrkdir:
         if w not in sys.path:
             sys.path.append(w)
+
+
+def count_words_in_list(lst, output_format: 'str' = 'dataframe'):
+    """
+    count the frequency of words in a list
+
+    :param lst: input list
+    :param output_format: output format, either dict or dataframe
+    :return: a dict or a dataframe
+    """
+
+    counts = {}
+
+    for i in lst:
+        if len(i) > 1:
+            counts[i] = counts.get(i, 0) + 1
+
+    if output_format == 'dict':
+        return counts
+    elif output_format == 'dataframe':
+        df_counts = pd.DataFrame.from_dict(counts, orient='index', columns=['count'])
+        df_counts = counts.reset_index().rename(columns={'index': 'word'})
+        return df_counts
+    else:
+        raise ValueError('output_format must be either dict or dataframe')
