@@ -1,4 +1,4 @@
-from log import set_logger
+from dwoht.log import set_logger
 
 from dwoht.funcs import (add_sys_path, calculate_r2_value, dataframe_mp, get_sunday, get_time_dif, lambda_groupby, list_diff, list_intersection, list_sym_diff,
                          list_union, set_diff, set_intersection, set_sym_diff, set_union, yaml_to_object)

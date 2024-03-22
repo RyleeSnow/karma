@@ -19,5 +19,5 @@
 #### dataframe_mp
 - multi-processing
 
-#### calculate_r2_value, lambda_groupby
+#### calculate_r2_value, lambda_groupby, count_words_in_list
 - specials
