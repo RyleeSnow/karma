@@ -61,7 +61,7 @@ def read_small_data(file_name: str,
         if 'nrows' in kwargs:
             df = pd.read_csv(file_path, low_memory=False, **kwargs)
         else:
-            rows = sum(1 for _ in open(file_path, 'r')) - 1
+            rows = sum(1 for _ in open(file_path, 'r', encoding='utf-8')) - 1
 
             chunk_list = []
             with tqdm(total=rows, desc='Loading data') as bar:
