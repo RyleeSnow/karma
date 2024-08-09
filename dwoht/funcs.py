@@ -1,18 +1,19 @@
+import concurrent.futures
 import datetime
-import multiprocessing
+import os
 import sys
 import time
 from collections import namedtuple
 from datetime import timedelta
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 import yaml
-from pathos.multiprocessing import ProcessPool
 
 
-def yaml_to_object(yaml_file, yaml_folder=None, to_object=True):
+def yaml_to_object(yaml_file: str, yaml_folder: str = None, to_object: bool = True):
     """
     read yaml config file to a dict
 
@@ -25,11 +26,11 @@ def yaml_to_object(yaml_file, yaml_folder=None, to_object=True):
     if Path(yaml_file).is_file():
         input_path = Path(yaml_file)
     else:
-        if yaml_folder is None:
-            raise ValueError("yaml_folder is None")
-        else:
+        if yaml_folder:
             yaml_folder = Path(yaml_folder)
-        input_path = yaml_folder.joinpath(yaml_file)
+            input_path = yaml_folder.joinpath(yaml_file)
+        else:
+            raise ValueError('Invalid yaml folder')
 
     with open(input_path, encoding="utf-8") as file:
         data = yaml.safe_load(file)
@@ -40,27 +41,24 @@ def yaml_to_object(yaml_file, yaml_folder=None, to_object=True):
     return data
 
 
-def dataframe_mp(dataframe: pd.DataFrame, func: callable, mp_cores: int = None) -> pd.DataFrame:
+def dataframe_mp(dataframe: pd.DataFrame, func: Callable, mp_cpus: int = None) -> pd.DataFrame:
     """
     do multiprocessing on a dataframe
 
     :param dataframe: input dataframe
     :param func: function to apply to the dataframe
-    :param mp_cores: number of cpus to use
+    :param mp_cpus: number of cpus to use
     :return: output dataframe
     """
 
-    if mp_cores is None:
-        mp_cores = multiprocessing.cpu_count() - 1
+    mp_cpus = mp_cpus if mp_cpus > 0 else os.cpu_count()
 
-    pool = ProcessPool(mp_cores)
+    split_input_dataset = np.array_split(dataframe, mp_cpus)
 
-    split_input_dataset = np.array_split(dataframe, mp_cores)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=mp_cpus) as executor:
+        results = list(executor.map(func, split_input_dataset))
 
-    output_dataset = pool.map(func, split_input_dataset)
-    del [split_input_dataset]
-
-    output_dataset = pd.concat(output_dataset, ignore_index=True)
+    output_dataset = pd.concat(results, ignore_index=True)
 
     return output_dataset
 

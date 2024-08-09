@@ -1,9 +1,8 @@
-from __future__ import annotations
-
 import logging
 import os
 import time
 from pathlib import Path
+from typing import Dict, Union
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -25,10 +24,10 @@ def my_read_parquet(file_path, **kwargs) -> pd.DataFrame:
     return df
 
 
-def read_small_data(file_name: str,
-                    data_folder: str | Path,
+def read_small_data(data_folder: Union[str, Path],
+                    file_name: str,
                     reformat_cols: str = None,
-                    rename_cols: dict = None,
+                    rename_cols: Dict = None,
                     logger: logging.Logger = None,
                     **kwargs) -> pd.DataFrame:
     """
@@ -42,8 +41,7 @@ def read_small_data(file_name: str,
     :return: loaded pd.dataframe
     """
 
-    data_folder = Path(data_folder)
-    file_path = data_folder.joinpath(file_name)
+    file_path = Path(data_folder).joinpath(file_name)
 
     if logger is None:
         print(f'Reading {file_path}')
@@ -52,73 +50,55 @@ def read_small_data(file_name: str,
 
     start_time = time.time()
 
-    file_suffix = file_name.split('.', 1)[1]
+    file_suffix = str(file_path).split('.', 1)[1]
+    read_functions = {'xlsx': pd.read_excel, 'txt': pd.read_csv, 'gzip': pd.read_parquet, 'parquet': pd.read_parquet}
 
-    if file_suffix in ['xlsx', 'xls']:
-        df = pd.read_excel(file_path, **kwargs)
-
-    elif file_suffix == 'csv':
-        if 'nrows' in kwargs:
-            df = pd.read_csv(file_path, low_memory=False, **kwargs)
-        else:
-            rows = sum(1 for _ in open(file_path, 'r', encoding='utf-8')) - 1
-
-            chunk_list = []
-            with tqdm(total=rows, desc='Loading data') as bar:
-                for chunk in pd.read_csv(file_path, chunksize=10000, low_memory=False, **kwargs):
-                    chunk_list.append(chunk)
-                    bar.update(len(chunk))
-
-            df = pd.concat((f for f in chunk_list), axis=0)
-
-    elif file_suffix == 'txt':
-        df = df = pd.read_csv(file_path, low_memory=False, **kwargs)
-
-    elif file_suffix == 'gzip':
-        df = my_read_parquet(file_path=file_path, **kwargs)
-
-    elif 'csv.' in file_suffix:
+    if 'csv.' in file_suffix:
         compression_type = file_suffix.split('.', 1)[1]
 
-        if '.' in compression_type:
-            raise ValueError(f'invalid file name {file_name}')
+        if compression_type not in ['gz', 'gzip', 'bz2', 'xz', 'zip']:
+            raise ValueError(f'Invalid file name {file_name}')
+
+        if compression_type == 'gz':
+            compression_type = 'gzip'
+
+        df = pd.read_csv(file_path, low_memory=False, compression=compression_type, **kwargs)
+
+    elif file_suffix == 'csv':
+        if 'nrows' not in kwargs:
+            rows = sum(1 for _ in open(file_path, 'r', encoding='utf-8')) - 1
+            with tqdm(total=rows, desc='Loading data') as bar:
+                df = pd.concat((chunk for chunk in pd.read_csv(file_path, chunksize=10000, low_memory=False, **kwargs)), axis=0)
+                bar.update(df.shape[0])
         else:
-            if compression_type == 'gz':
-                compression_type = 'gzip'
-            else:
-                pass
+            df = pd.read_csv(file_path, low_memory=False, **kwargs)
 
-            df = pd.read_csv(file_path, low_memory=False, compression=compression_type, **kwargs)
+    elif file_suffix in read_functions:
+        df = read_functions[file_suffix](file_path, **kwargs)
 
     else:
-        raise ValueError(f'invalid file name {file_name}')
+        raise ValueError(f'Invalid file suffix {file_suffix}')
 
-    if rename_cols is None:
-        pass
-    else:
+    if rename_cols:
         df.rename(columns=rename_cols, inplace=True)
 
-    if reformat_cols == 'upper':
-        df.rename(columns=str.upper, inplace=True)
-    elif reformat_cols == 'lower':
-        df.rename(columns=str.lower, inplace=True)
-    else:
-        pass
+    if reformat_cols:
+        df.rename(columns=str.upper if reformat_cols == 'upper' else str.lower, inplace=True)
 
-    if logger is None:
-        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
-              f'read {df.shape[0]} rows and columns are: {df.columns.to_list()}')
-    else:
+    if logger:
         logger.info(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
-                    f'read {df.shape[0]} rows and columns are: {df.columns.to_list()}')
+                    f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
+    else:
+        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
+              f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
 
     return df
 
 
-def read_big_data(file_name: str,
-                  data_folder: str | Path,
+def read_big_data(data_folder: Union[str, Path],
+                  file_name: str,
                   reformat_cols: str = None,
-                  rename_cols: dict = None,
+                  rename_cols: Dict = None,
                   logger: logging.Logger = None,
                   **kwargs) -> pd.DataFrame:
     """
@@ -132,29 +112,36 @@ def read_big_data(file_name: str,
     :return: loaded pd.dataframe
     """
 
-    data_folder = Path(data_folder)
-
-    file_path = data_folder.joinpath(file_name)
+    file_path = Path(data_folder).joinpath(file_name)
 
     if logger is None:
         print(f'Reading {file_path}')
     else:
         logger.info(f'Reading {file_path}')
+
     start_time = time.time()
 
-    file_suffix = file_name.split('.', 1)[1]
+    file_suffix = str(file_path).split('.', 1)[1]
 
-    if file_suffix in ['xlsx', 'xls']:
-        df = pd.read_excel(file_path, **kwargs)
+    read_functions = {'xlsx': pd.read_excel, 'txt': pd.read_csv, 'gzip': pd.read_parquet, 'parquet': pd.read_parquet}
+
+    if 'csv.' in file_suffix:
+        compression_type = file_suffix.split('.', 1)[1]
+
+        if compression_type not in ['gz', 'gzip', 'bz2', 'xz', 'zip']:
+            raise ValueError(f'Invalid file name {file_name}')
+
+        if compression_type == 'gz':
+            compression_type = 'gzip'
+
+        df = pd.read_csv(file_path, low_memory=False, compression=compression_type, **kwargs)
 
     elif file_suffix == 'csv':
-        if 'nrows' in kwargs:
-            df = pd.read_csv(file_path, low_memory=False, **kwargs)
-        else:
-            if logger is None:
-                print('Loading Chunks ...')
-            else:
+        if 'nrows' not in kwargs:
+            if logger:
                 logger.info('Loading Chunks ...')
+            else:
+                print('Loading Chunks ...')
 
             chunk_reader = pd.read_csv(file_path, chunksize=1000000, **kwargs)  # the number of rows per chunk
 
@@ -162,58 +149,38 @@ def read_big_data(file_name: str,
             for df in chunk_reader:
                 df_lst.append(df)
 
-            if logger is None:
-                print('Concat Chunks ...')
-            else:
+            if logger:
                 logger.info('Concat Chunks ...')
+            else:
+                print('Concat Chunks ...')
 
             df = pd.concat(df_lst, sort=False)
-
-    elif file_suffix == 'txt':
-        df = df = pd.read_csv(file_path, low_memory=False, **kwargs)
-
-    elif file_suffix == 'gzip':
-        df = my_read_parquet(file_path=file_path, **kwargs)
-
-    elif 'csv.' in file_suffix:
-        compression_type = file_suffix.split('.', 1)[1]
-
-        if '.' in compression_type:
-            raise ValueError(f'invalid file name {file_name}')
         else:
-            if compression_type == 'gz':
-                compression_type = 'gzip'
-            else:
-                pass
+            df = pd.read_csv(file_path, low_memory=False, **kwargs)
 
-            df = pd.read_csv(file_path, low_memory=False, compression=compression_type, **kwargs)
+    elif file_suffix in read_functions:
+        df = read_functions[file_suffix](file_path, **kwargs)
 
     else:
-        raise ValueError(f'invalid file name {file_name}')
+        raise ValueError(f'Invalid file suffix {file_suffix}')
 
-    if rename_cols is None:
-        pass
-    else:
+    if rename_cols:
         df.rename(columns=rename_cols, inplace=True)
 
-    if reformat_cols == 'upper':
-        df.rename(columns=str.upper, inplace=True)
-    elif reformat_cols == 'lower':
-        df.rename(columns=str.lower, inplace=True)
-    else:
-        pass
+    if reformat_cols:
+        df.rename(columns=str.upper if reformat_cols == 'upper' else str.lower, inplace=True)
 
-    if logger is None:
-        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
-              f'read {df.shape[0]} rows and columns are: {df.columns.to_list()}')
-    else:
+    if logger:
         logger.info(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
-                    f'read {df.shape[0]} rows and columns are: {df.columns.to_list()}')
+                    f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
+    else:
+        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
+              f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
 
     return df
 
 
-def save_data(df: pd.DataFrame, data_folder: str | Path, file_name: str, logger: logging.Logger = None, **kwargs) -> None:
+def save_data(data_folder: Union[str, Path], file_name: str, df: pd.DataFrame, logger: logging.Logger = None, **kwargs) -> None:
     """
     customized function to save a dataframe, supporting to_excel / to_csv / to_parquet
 
@@ -246,7 +213,7 @@ def save_data(df: pd.DataFrame, data_folder: str | Path, file_name: str, logger:
     else:
         kwargs['index'] = False
 
-    if file_suffix in ['xlsx', 'xls']:
+    if file_suffix in ['xlsx']:
         df.to_excel(file_path, **kwargs)
 
     elif file_suffix == 'csv':
@@ -258,16 +225,20 @@ def save_data(df: pd.DataFrame, data_folder: str | Path, file_name: str, logger:
     elif 'csv.' in file_suffix:
         compression_type = file_suffix.split('.', 1)[1]
 
-        if '.' in compression_type:
-            raise ValueError(f'invalid file name {file_name}')
-        else:
-            df.to_csv(path_or_buf=file_path, compression=compression_type, **kwargs)
+        if compression_type not in ['gz', 'gzip', 'bz2', 'xz', 'zip']:
+            raise ValueError(f'Invalid file name {file_name}')
+
+        if compression_type == 'gz':
+            compression_type = 'gzip'
+
+        df.to_csv(path_or_buf=file_path, compression=compression_type, **kwargs)
 
     else:
         raise ValueError(f'invalid file name {file_name}')
-    if logger is None:
-        print(f'Time consumed: {round((time.time() - start_time), 2)} seconds, '
-              f'saved {df.shape[0]} rows and columns are: {df.columns.to_list()}')
-    else:
+
+    if logger:
         logger.info(f'Time consumed: {round((time.time() - start_time), 2)} seconds, '
                     f'saved {df.shape[0]} rows and columns are: {df.columns.to_list()}')
+    else:
+        print(f'Time consumed: {round((time.time() - start_time), 2)} seconds, '
+              f'saved {df.shape[0]} rows and columns are: {df.columns.to_list()}')
