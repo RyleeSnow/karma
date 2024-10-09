@@ -28,7 +28,7 @@ def read_small_data(data_folder: Union[str, Path],
                     file_name: str,
                     reformat_cols: str = None,
                     rename_cols: Dict = None,
-                    logger: logging.Logger = None,
+                    logger: Union[logging.Logger, str, None] = 'print',
                     **kwargs) -> pd.DataFrame:
     """
     customized function to read a singe data file, supporting read_excel / read_csv / read_parquet
@@ -43,10 +43,12 @@ def read_small_data(data_folder: Union[str, Path],
 
     file_path = Path(data_folder).joinpath(file_name)
 
-    if logger is None:
+    if logger == 'print':
         print(f'Reading {file_path}')
-    else:
+    elif logger:
         logger.info(f'Reading {file_path}')
+    else:
+        pass
 
     start_time = time.time()
 
@@ -85,12 +87,14 @@ def read_small_data(data_folder: Union[str, Path],
     if reformat_cols:
         df.rename(columns=str.upper if reformat_cols == 'upper' else str.lower, inplace=True)
 
-    if logger:
+    if logger == 'print':
+        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
+              f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
+    elif logger:
         logger.info(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
                     f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
     else:
-        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
-              f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
+        pass
 
     return df
 
@@ -99,7 +103,7 @@ def read_big_data(data_folder: Union[str, Path],
                   file_name: str,
                   reformat_cols: str = None,
                   rename_cols: Dict = None,
-                  logger: logging.Logger = None,
+                  logger: Union[logging.Logger, str, None] = 'print',
                   **kwargs) -> pd.DataFrame:
     """
     customized function to read a singe data file, supporting read_excel / read_csv / read_parquet
@@ -114,10 +118,12 @@ def read_big_data(data_folder: Union[str, Path],
 
     file_path = Path(data_folder).joinpath(file_name)
 
-    if logger is None:
+    if logger == 'print':
         print(f'Reading {file_path}')
-    else:
+    elif logger:
         logger.info(f'Reading {file_path}')
+    else:
+        pass
 
     start_time = time.time()
 
@@ -138,10 +144,12 @@ def read_big_data(data_folder: Union[str, Path],
 
     elif file_suffix == 'csv':
         if 'nrows' not in kwargs:
-            if logger:
+            if logger == 'print':
+                print('Loading Chunks ...')
+            elif logger:
                 logger.info('Loading Chunks ...')
             else:
-                print('Loading Chunks ...')
+                pass
 
             chunk_reader = pd.read_csv(file_path, chunksize=1000000, **kwargs)  # the number of rows per chunk
 
@@ -149,10 +157,12 @@ def read_big_data(data_folder: Union[str, Path],
             for df in chunk_reader:
                 df_lst.append(df)
 
-            if logger:
+            if logger == 'print':
+                print('Concat Chunks ...')
+            elif logger:
                 logger.info('Concat Chunks ...')
             else:
-                print('Concat Chunks ...')
+                pass
 
             df = pd.concat(df_lst, sort=False)
         else:
@@ -170,17 +180,19 @@ def read_big_data(data_folder: Union[str, Path],
     if reformat_cols:
         df.rename(columns=str.upper if reformat_cols == 'upper' else str.lower, inplace=True)
 
-    if logger:
+    if logger == 'print':
+        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
+              f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
+    elif logger:
         logger.info(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
                     f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
     else:
-        print(f'Data Reading Time: {round((time.time() - start_time), 2)} seconds, '
-              f'Read {df.shape[0]} rows and columns: {df.columns.to_list()}')
+        pass
 
     return df
 
 
-def save_data(data_folder: Union[str, Path], file_name: str, df: pd.DataFrame, logger: logging.Logger = None, **kwargs) -> None:
+def save_data(data_folder: Union[str, Path], file_name: str, df: pd.DataFrame, logger: Union[logging.Logger, str, None] = 'print', **kwargs) -> None:
     """
     customized function to save a dataframe, supporting to_excel / to_csv / to_parquet
 
@@ -201,10 +213,12 @@ def save_data(data_folder: Union[str, Path], file_name: str, df: pd.DataFrame, l
     file_path = data_folder.joinpath(file_name)
     file_suffix = file_name.split('.', 1)[1]
 
-    if logger is None:
+    if logger == 'print':
         print(f'Saving {file_path}')
-    else:
+    elif logger:
         logger.info(f'Saving {file_path}')
+    else:
+        pass
 
     start_time = time.time()
 
@@ -236,9 +250,11 @@ def save_data(data_folder: Union[str, Path], file_name: str, df: pd.DataFrame, l
     else:
         raise ValueError(f'invalid file name {file_name}')
 
-    if logger:
+    if logger == 'print':
+        print(f'Time consumed: {round((time.time() - start_time), 2)} seconds, '
+              f'saved {df.shape[0]} rows and columns are: {df.columns.to_list()}')
+    elif logger:
         logger.info(f'Time consumed: {round((time.time() - start_time), 2)} seconds, '
                     f'saved {df.shape[0]} rows and columns are: {df.columns.to_list()}')
     else:
-        print(f'Time consumed: {round((time.time() - start_time), 2)} seconds, '
-              f'saved {df.shape[0]} rows and columns are: {df.columns.to_list()}')
+        pass

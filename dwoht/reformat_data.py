@@ -1,8 +1,10 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 
 
-def col_to_str(df: pd.DataFrame, col_list: list[str]) -> pd.DataFrame:
+def col_to_str(df: pd.DataFrame, col_list: List[str]) -> pd.DataFrame:
     """
     transform int / float column to str
 
@@ -27,7 +29,7 @@ def col_to_str(df: pd.DataFrame, col_list: list[str]) -> pd.DataFrame:
     return df
 
 
-def col_to_float(df: pd.DataFrame, col_list: list[str]) -> pd.DataFrame:
+def col_to_float(df: pd.DataFrame, col_list: List[str]) -> pd.DataFrame:
     """
     transform int / str column to float
 
