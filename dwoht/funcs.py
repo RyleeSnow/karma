@@ -1,9 +1,11 @@
+# -- coding: utf-8 --
+
 import concurrent.futures
 import datetime
 import os
 import sys
 import time
-from collections import namedtuple
+from collections import Union, namedtuple
 from datetime import timedelta
 from pathlib import Path
 from typing import Callable
@@ -11,6 +13,11 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 import yaml
+
+
+def yellow_print(text: str) -> None:
+    """Print text in bold yellow"""
+    print(f"\n\033[1;33m{text}\033[0m\n")
 
 
 def yaml_to_object(yaml_file: str, yaml_folder: str = None, to_object: bool = True):
@@ -39,6 +46,18 @@ def yaml_to_object(yaml_file: str, yaml_folder: str = None, to_object: bool = Tr
         data = namedtuple("ObjectName", data.keys())(*data.values())
 
     return data
+
+
+def check_path(path: Union[str, Path]) -> None:
+    """Check the path and create it if not exist"""
+    # Ensure path is a Path object
+    path = Path(path)
+
+    # Check if directory exists, if not, create it
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        raise OSError(f"An error occurred while creating the directory: {e}")
 
 
 def dataframe_mp(dataframe: pd.DataFrame, func: Callable, mp_cpus: int = None) -> pd.DataFrame:
