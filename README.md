@@ -1,4 +1,4 @@
-# My Utility Library
+# My Utility Library (pip package `dwoht`)
 
 This repository contains a collection of utility functions and scripts that I frequently use in my projects. The library is designed to simplify data processing, logging, notifications, and more. It is primarily intended for personal use, but feel free to explore and adapt it for your own needs.
 
