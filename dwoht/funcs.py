@@ -5,10 +5,10 @@ import datetime
 import os
 import sys
 import time
-from collections import Union, namedtuple
+from collections import namedtuple
 from datetime import timedelta
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union
 
 import numpy as np
 import pandas as pd
